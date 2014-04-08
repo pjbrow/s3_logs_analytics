@@ -2,7 +2,17 @@
 // Data Setup
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-function Record(day, month, year, IpAddress, fileName) {
+function getMonthNumber(monthString) {
+    var monthArray = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    for (var g = 0; g < 12; g++) {
+        if (monthArray[g] === monthString) {
+            return g+1;
+        }
+    }
+}
+
+function Record(fullDate, day, month, year, IpAddress, fileName) {
+    this.fullDate = fullDate;
     this.day = day;
     this.month = month;
     this.year = year;
@@ -13,7 +23,7 @@ function Record(day, month, year, IpAddress, fileName) {
     };
 }
 Record.prototype.toString = function recordToString() {
-    return this.day + '{}' + this.month + '{}' + this.year + '{}' + this.IpAddress + '{}' + this.fileName;
+    return this.fullDate + '{}' + this.day + '{}' + this.month + '{}' + this.year + '{}' + this.IpAddress + '{}' + this.fileName;
 };
 
 
@@ -90,28 +100,37 @@ function processData(bigArray) {
         var date = log.match(/\[(.*?)\]/)[0];
         date = date.match(/\d\d\/\S\S\S\/\d\d\d\d/)[0];
         date = date.split('/');
+        console.log(date);
+        var monthNumber = getMonthNumber(date[1]);
+        console.log(monthNumber);
+        var fullDate = new Date(2014, monthNumber - 1, parseInt(date[0]));
+        console.log(fullDate);
         var fileName = log.match(/(REST.HEAD.OBJECT|REST.GET.OBJECT)(\s\S+)/) ? log.match(/(REST.HEAD.OBJECT|REST.GET.OBJECT)(\s\S+)/)[0].split(" ")[1] : 'not relevant';
-        ob = new Record(date[0], date[1], date[2], IpAddress, fileName);
+        ob = new Record(fullDate, date[0], monthNumber, date[2], IpAddress, fileName);
         obArray.push(ob);
     }
     return deleteDuplicates(obArray);
 }
 
 function deleteDuplicates(obArray) {
+    // console.log(obArray);
     var stringArray = [];
     console.log('Deleting duplicate data.');
     for (var q = 0; q < obArray.length; q++) {
         stringArray.push(obArray[q].toString());
     }
+    // console.log(stringArray);
     return backToObjects(_.uniq(stringArray));
 }
 
 function backToObjects(arrayOfUniques) {
+    console.log(arrayOfUniques);
     var printArray = [];
     for (var k = 0; k < arrayOfUniques.length; k++) {
         var splitString = arrayOfUniques[k].split('{}');
-        if (splitString[4].search('.mp3') > 0) {
-            reconstitutedObject = new Record(parseInt(splitString[0]), splitString[1], splitString[2], splitString[3], splitString[4]);
+        if (splitString[5].search('.mp3') > 0) {
+            var backToDate = new Date(splitString[0]);
+            reconstitutedObject = new Record(backToDate, splitString[1], splitString[2], splitString[3], splitString[4], splitString[5]);
             printArray.push(reconstitutedObject);
         }
     }
@@ -119,6 +138,7 @@ function backToObjects(arrayOfUniques) {
 }
 
 function printToFile(printArray) {
+    console.log(printArray);
     var output = "";
     console.log(output);
     for (var h = 0; h < printArray.length; h++) {
@@ -145,7 +165,7 @@ function mongoStash(printArray) {
         collection.insert(printArray, function(err, docs) {
             collection.aggregate([{
                 $group: {
-                    _id: "$day",
+                    _id: "$fullDate",
                     perDay: {
                         $sum: 1
                     }
