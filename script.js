@@ -36,7 +36,7 @@ AWS.config.loadFromPath('config.json');
 var s3 = new AWS.S3();
 var params = {
     Bucket: 'alicepodcastlogs',
-    Marker: "logs/2014-03-20-13-17-31-414F1980187A45A2"
+    Marker: 'logs/2014-04-26-18-16-45-CAF9817A593A4FB1'
 };
 
 
